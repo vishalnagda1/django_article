@@ -99,3 +99,62 @@ def destroy(request):
             'error': 'Invalid request',
             'type': str(type(e))
         }, status.HTTP_400_BAD_REQUEST)
+
+
+# basic crud ends here
+
+
+@api_view(['GET', 'PUT'])
+def unarchive(request):
+    if request.method == 'GET':
+        articles = Article.objects.filter(archive=False)
+        return Response({
+            'articles': ArticleSerializer(articles, many=True).data
+        })
+    else:
+        try:
+            article_id = request.query_params['id']
+            article = Article.objects.get(id=article_id)
+            article.archive = False
+            article.save()
+            return Response({
+                'article': ArticleSerializer(article).data
+            })
+        except ObjectDoesNotExist as e:
+            return Response({
+                'error': 'Article not found.',
+                'type': str(type(e))
+            }, status.HTTP_422_UNPROCESSABLE_ENTITY)
+        except Exception as e:
+            return Response({
+                'error': 'Invalid request.',
+                'type': str(type(e))
+            }, status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT'])
+def archive(request):
+    if request.method == 'GET':
+        articles = Article.objects.filter(archive=True)
+        return Response({
+            'articles': ArticleSerializer(articles, many=True).data
+        })
+    else:
+        try:
+            article_id = request.query_params['id']
+            article = Article.objects.get(id=article_id)
+            article.archive = True
+            article.save()
+            return Response({
+                'article': ArticleSerializer(article).data
+            })
+        except ObjectDoesNotExist as e:
+            return Response({
+                'error': 'Article not found.',
+                'type': str(type(e))
+            }, status.HTTP_422_UNPROCESSABLE_ENTITY)
+        except Exception as e:
+            return Response({
+                'error': 'Invalid request.',
+                'type': str(type(e))
+            }, status.HTTP_400_BAD_REQUEST)
