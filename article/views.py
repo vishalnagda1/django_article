@@ -78,3 +78,24 @@ def update(request):
             'error': 'Invalid request',
             'type': str(type(e))
         }, status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+def destroy(request):
+    try:
+        article_id = request.query_params['id']
+        article = Article.objects.get(id=article_id)
+        article.delete()
+        return Response({
+            'article': ArticleSerializer(article).data
+        })
+    except ObjectDoesNotExist as e:
+        return Response({
+            'error': 'Article not found.',
+            'type': str(type(e))
+        }, status.HTTP_422_UNPROCESSABLE_ENTITY)
+    except Exception as e:
+        return Response({
+            'error': 'Invalid request',
+            'type': str(type(e))
+        }, status.HTTP_400_BAD_REQUEST)
