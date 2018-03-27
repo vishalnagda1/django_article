@@ -35,4 +35,22 @@ def show(request):
     except Exception as e:
         return Response({
             'error': 'Invalid params passed',
+            'type': str(type(e))
+        }, status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+def create(request):
+    try:
+        article_data = request.data['article']
+        title = article_data['title']
+        text = article_data['text']
+        article = Article.objects.create(title=title, text=text)
+        return Response({
+            'article': ArticleSerializer(article).data
+        }, status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({
+            'error': 'Invalid request',
+            'type': str(type(e))
         }, status.HTTP_400_BAD_REQUEST)
