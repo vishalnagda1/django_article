@@ -31,7 +31,7 @@ def show(request):
     except ObjectDoesNotExist as e:
         return Response({
             'error': 'Article not found.',
-        }, status.HTTP_204_NO_CONTENT)
+        }, status.HTTP_422_UNPROCESSABLE_ENTITY)
     except Exception as e:
         return Response({
             'error': 'Invalid params passed',
@@ -49,6 +49,30 @@ def create(request):
         return Response({
             'article': ArticleSerializer(article).data
         }, status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({
+            'error': 'Invalid request',
+            'type': str(type(e))
+        }, status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PUT'])
+def update(request):
+    try:
+        article_id = request.query_params['id']
+        article_data = request.data['article']
+        article = Article.objects.get(id=article_id)
+        article.title = article_data['title']
+        article.text = article_data['text']
+        article.save()
+        return Response({
+            'article': ArticleSerializer(article).data,
+        })
+    except ObjectDoesNotExist as e:
+        return Response({
+            'error': 'Article not found.',
+            'type': str(type(e))
+        }, status.HTTP_422_UNPROCESSABLE_ENTITY)
     except Exception as e:
         return Response({
             'error': 'Invalid request',

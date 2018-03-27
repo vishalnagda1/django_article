@@ -6,4 +6,5 @@ urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^show', views.show, name='show'),
     url(r'^create', views.create, name='create'),
+    url(r'^update', views.update, name='update'),
 ]
