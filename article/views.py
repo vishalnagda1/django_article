@@ -1,160 +1,55 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.core.exceptions import ObjectDoesNotExist
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.parsers import JSONParser
 
-from .models import Article
-from .serializers import ArticleSerializer
-
-
-@api_view(['GET'])
-def index(request):
-    articles = Article.objects.all()
-    articles = ArticleSerializer(articles, many=True)
-    return Response({
-        'articles': articles.data
-    })
+from article.models import Article
+from article.serializers import ArticleSerializer
 
 
-@api_view(['GET'])
-def show(request):
+@csrf_exempt
+def articles(request):
+    """
+    List all the articles or create a new article.
+    """
+    if request.method == 'GET':
+        snippets = Article.objects.all()
+        serializer = ArticleSerializer(snippets, many=True)
+        return JsonResponse({'articles': serializer.data}, safe=False)
+
+    elif request.method == 'POST':
+        data = JSONParser().parse(request)
+        serializer = ArticleSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=201)
+        return JsonResponse(serializer.errors, status=400)
+
+
+@csrf_exempt
+def article_ops(request, pk):
+    """
+    Retrieve, update or delete a article.
+    """
     try:
-        article_id = request.query_params['id']
-        article = Article.objects.get(id=article_id)
-        article = ArticleSerializer(article)
-        return Response({
-            'article': article.data
-        })
-    except ObjectDoesNotExist as e:
-        return Response({
-            'error': 'Article not found.',
-        }, status.HTTP_422_UNPROCESSABLE_ENTITY)
-    except Exception as e:
-        return Response({
-            'error': 'Invalid params passed',
-            'type': str(type(e))
-        }, status.HTTP_400_BAD_REQUEST)
+        article = Article.objects.get(pk=pk)
+    except Article.DoesNotExist:
+        return HttpResponse(status=404)
 
+    if request.method == 'GET':
+        serializer = ArticleSerializer(article)
+        return JsonResponse(serializer.data)
 
-@api_view(['POST'])
-def create(request):
-    try:
-        article_data = request.data['article']
-        title = article_data['title']
-        text = article_data['text']
-        article = Article.objects.create(title=title, text=text)
-        return Response({
-            'article': ArticleSerializer(article).data
-        }, status.HTTP_201_CREATED)
-    except Exception as e:
-        return Response({
-            'error': 'Invalid request',
-            'type': str(type(e))
-        }, status.HTTP_400_BAD_REQUEST)
+    elif request.method == 'PUT':
+        data = JSONParser().parse(request)
+        serializer = ArticleSerializer(article, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data)
+        return JsonResponse(serializer.errors, status=400)
 
-
-@api_view(['PUT'])
-def update(request):
-    try:
-        article_id = request.query_params['id']
-        article_data = request.data['article']
-        article = Article.objects.get(id=article_id)
-        article.title = article_data['title']
-        article.text = article_data['text']
-        article.save()
-        return Response({
-            'article': ArticleSerializer(article).data,
-        })
-    except ObjectDoesNotExist as e:
-        return Response({
-            'error': 'Article not found.',
-            'type': str(type(e))
-        }, status.HTTP_422_UNPROCESSABLE_ENTITY)
-    except Exception as e:
-        return Response({
-            'error': 'Invalid request',
-            'type': str(type(e))
-        }, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['DELETE'])
-def destroy(request):
-    try:
-        article_id = request.query_params['id']
-        article = Article.objects.get(id=article_id)
+    elif request.method == 'DELETE':
         article.delete()
-        return Response({
-            'article': ArticleSerializer(article).data
-        })
-    except ObjectDoesNotExist as e:
-        return Response({
-            'error': 'Article not found.',
-            'type': str(type(e))
-        }, status.HTTP_422_UNPROCESSABLE_ENTITY)
-    except Exception as e:
-        return Response({
-            'error': 'Invalid request',
-            'type': str(type(e))
-        }, status.HTTP_400_BAD_REQUEST)
-
-
-# basic crud ends here
-
-
-@api_view(['GET', 'PUT'])
-def unarchive(request):
-    if request.method == 'GET':
-        articles = Article.objects.filter(archive=False)
-        return Response({
-            'articles': ArticleSerializer(articles, many=True).data
-        })
-    else:
-        try:
-            article_id = request.query_params['id']
-            article = Article.objects.get(id=article_id)
-            article.archive = False
-            article.save()
-            return Response({
-                'article': ArticleSerializer(article).data
-            })
-        except ObjectDoesNotExist as e:
-            return Response({
-                'error': 'Article not found.',
-                'type': str(type(e))
-            }, status.HTTP_422_UNPROCESSABLE_ENTITY)
-        except Exception as e:
-            return Response({
-                'error': 'Invalid request.',
-                'type': str(type(e))
-            }, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET', 'PUT'])
-def archive(request):
-    if request.method == 'GET':
-        articles = Article.objects.filter(archive=True)
-        return Response({
-            'articles': ArticleSerializer(articles, many=True).data
-        })
-    else:
-        try:
-            article_id = request.query_params['id']
-            article = Article.objects.get(id=article_id)
-            article.archive = True
-            article.save()
-            return Response({
-                'article': ArticleSerializer(article).data
-            })
-        except ObjectDoesNotExist as e:
-            return Response({
-                'error': 'Article not found.',
-                'type': str(type(e))
-            }, status.HTTP_422_UNPROCESSABLE_ENTITY)
-        except Exception as e:
-            return Response({
-                'error': 'Invalid request.',
-                'type': str(type(e))
-            }, status.HTTP_400_BAD_REQUEST)
+        return HttpResponse(status=204)
