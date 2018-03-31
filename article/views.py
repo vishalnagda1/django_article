@@ -3,12 +3,14 @@ from __future__ import unicode_literals
 
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
 
 from article.models import Article
 from article.serializers import ArticleSerializer
 
 
+@api_view(['GET', 'POST'])
 @csrf_exempt
 def articles(request):
     """
@@ -17,7 +19,7 @@ def articles(request):
     if request.method == 'GET':
         snippets = Article.objects.all()
         serializer = ArticleSerializer(snippets, many=True)
-        return JsonResponse({'articles': serializer.data}, safe=False)
+        return JsonResponse(serializer.data, safe=False)
 
     elif request.method == 'POST':
         data = JSONParser().parse(request)
@@ -28,6 +30,7 @@ def articles(request):
         return JsonResponse(serializer.errors, status=400)
 
 
+@api_view(['GET', 'PUT', 'DELETE'])
 @csrf_exempt
 def article_ops(request, pk):
     """
@@ -44,7 +47,7 @@ def article_ops(request, pk):
 
     elif request.method == 'PUT':
         data = JSONParser().parse(request)
-        serializer = ArticleSerializer(article, data=data)
+        serializer = ArticleSerializer(article, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return JsonResponse(serializer.data)
